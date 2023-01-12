@@ -20,29 +20,45 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Verify files
+      - name: Checkout mxml
+        uses: actions/checkout@v3
+        with:
+          repository: michaelrsweet/mxml
+          path: mxml
+
+      - name: Configure mxml
+        working-directory: mxml
+        env:
+          CC: /usr/bin/gcc
+        run: ./configure --enable-debug --enable-maintainer
+
+      - name: Build mxml
+        working-directory: mxml
         run: |
-          cd .ci && make && cd ..
-          mkdir -p output/json
-          mkdir -p output/misc
-          i=0
-          FILES="patches/json/*.json"
+          sudo make
+          sudo make install
+
+      - name: Verify XML files
+        working-directory: mxml
+        run: |
+          export LD_LIBRARY_PATH=$(pwd)
+          FILES="../patches/xml/*.xml"
+          clang ../.ci/test.c -lmxml -D__PC__
           for f in $FILES
           do
-            python .ci/json_check.py $f
-            .ci/example-01.exe $f
+            ./a.out $f
             ((i=i+1))
           done
-          echo "$i file(s) verified"
 
-      - name: Process files
+      - name: Generate TitleID files
         run: |
-          python .ci/file-autogen.py
-          python .ci/remove-ids.py
+          mkdir -p output/xml
+          mkdir -p output/misc
+          python .ci/file-autogen.py "$(pwd)/patches/xml/*.xml"
           current=$(date '+%Y-%m-%d %H:%M:%S %A (%Z %z)')
           msg="Patch database version: $current"
           msg_md="Patch archive built on: \`$current\`"
-          echo $msg > output/json/build.txt
+          echo $msg > output/xml/build.txt
           echo $msg > output/misc/patch_ver.txt
           echo $msg > build.txt
           echo $msg_md > patch_built.md
@@ -72,18 +88,6 @@ jobs:
         with:
           name: patches
           path: patches
-
-      - name: Commit Normalized JSON files
-        if: |
-          github.ref_name == 'main' &&
-          github.event_name == 'push' &&
-          github.repository == 'GoldHEN/GoldHEN_Patch_Repository'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Actions"
-          git add patches/json/*.json
-          git commit -m "Normalize JSON files" || true
-          git push origin || true
 
       - name: Deploy
         if: |
