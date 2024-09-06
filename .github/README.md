@@ -1,3 +1,7 @@
+**This repository is now outdated and has been moved to [illusion0001/PS4-PS5-Game-Patch](https://github.com/illusion0001/PS4-PS5-Game-Patch)**
+
+---
+
 # GoldHEN Patch Repository
 Custom Game Patches for PlayStation 4 Games.
 
